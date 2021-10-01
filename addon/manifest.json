@@ -1,0 +1,35 @@
+{
+  "description": "Easy OTP codes on the browser with a Yubikey",
+  "manifest_version": 2,
+  "name": "yubikey-companion",
+  "version": "1.0",
+  "author": "dyeray <dyeray@gmail.com>",
+  "homepage_url": "https://github.com/dyeray/yubikey-companion",
+  "icons": {
+    "48": "icons/star.png"
+  },
+
+  "background": {
+    "page": "background/page.html"
+  },
+
+  "permissions": [
+    "nativeMessaging",
+    "menus",
+    "activeTab",
+    "storage"
+  ],
+
+  "applications": {
+    "gecko": {
+      "id": "yubicompanion@dyeray",
+      "strict_min_version": "92.0"
+    }
+  },
+
+  "options_ui": {
+    "page": "ui/options.html",
+    "browser_style": true
+  }
+
+}

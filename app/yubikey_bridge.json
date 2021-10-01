@@ -1,0 +1,7 @@
+{
+  "name": "yubikey_bridge",
+  "description": "Helper native app for Yubikey Companion addon",
+  "path": "</path/to/yubikey_bridge.py>",
+  "type": "stdio",
+  "allowed_extensions": [ "yubicompanion@dyeray" ]
+}
