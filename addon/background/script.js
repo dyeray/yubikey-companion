@@ -1,26 +1,84 @@
 "use strict";
-import { getCodes } from "/utils/storage.js";
 
-var port = getNativePort();
+async function message(json) {
+    let reply = await browser.runtime.sendNativeMessage("yubikey_bridge", json);
+    if (reply["type"] == "exception") {
+        console.log(reply["exception"])
+    }
+    if (reply["type"] == "error") {
+        console.log(reply["error"])
+    }
+    console.log(reply)
+    return reply
+}
 
-port.onMessage.addListener((message) => {
+var accounts = null
+
+async function listAccounts() {
+    let reply = await message({ "type": "listAccounts" })
+    return reply.accounts
+}
+
+async function setupMenus() {
+    browser.menus.create({
+        id: "generate-otp",
+        title: "Generate OTP",
+        documentUrlPatterns: ["https://*/*", "http://*/*"],
+        contexts: ["editable"],
+    });
+
+
+    browser.menus.create({
+        id: "guess",
+        title: "Guess",
+        parentId: "generate-otp"
+    })
+
+    browser.menus.create({
+        type: "separator",
+        parentId: "generate-otp"
+    })
+
+
+
+    accounts = await listAccounts()
+    accounts.forEach((account) => {
+        browser.menus.create({
+            id: account,
+            title: account,
+            parentId: "generate-otp",
+        })
+    })
+
+}
+
+browser.menus.onHidden.addListener(async (info) => {
+    browser.menus.removeAll()
+    setupMenus()
+})
+
+browser.menus.onClicked.addListener(async (info, tab) => {
+    if (id == "guess") {
+        accounts.find((account) => {
+            const [issuer, user, _] = account.split(/:(.*)/s)
+            return tab.url.search(new RegExp(issuer, 'i'))
+        })
+
+    }
+    console.log(info, tab)
+})
+
+
+setupMenus()
+
+
+function onResponse(message) {
     console.log("Received: " + JSON.stringify(message));
     if (message.type === "otpResponse") {
         injectOtp(message["target"], message["otp"]);
     }
-});
+}
 
-browser.menus.create({
-    id: "generate-otp",
-    title: "Generate OTP",
-    documentUrlPatterns: ["https://*/*", "http://*/*"],
-    contexts: ["editable"],
-    onclick(info, tab) {
-        if (info.menuItemId === "generate-otp") {
-            generateOtp(info, tab);
-        }
-    }
-});
 
 function getNativePort() {
     return browser.runtime.connectNative("yubikey_bridge");
@@ -35,7 +93,8 @@ async function generateOtp(info, tab) {
         "keyName": keyName
     };
     console.log("Sent message: " + JSON.stringify(message));
-    port.postMessage(message);
+    let sending = browser.runtime.sendNativeMessage("yubikey_bridge", message);
+    sending.then(onResponse)
 }
 
 async function getKeyName(url) {
