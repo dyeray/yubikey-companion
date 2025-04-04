@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import traceback
 import json
 import os
 import struct
@@ -20,7 +21,8 @@ def encodeMessage(messageContent):
     return {'length': encodedLength, 'content': encodedContent}
 
 
-def sendMessage(encodedMessage):
+def sendMessage(messageContent):
+    encodedMessage = encodeMessage(messageContent)
     sys.stdout.buffer.write(encodedMessage['length'])
     sys.stdout.buffer.write(encodedMessage['content'])
     sys.stdout.buffer.flush()
@@ -30,6 +32,9 @@ def getOtpCode(key):
     result = run('ykman oath accounts code "{}"'.format(key))
     return result.strip().split(" ")[-1]
 
+def listOtpAccounts():
+    result = run('ykman oath accounts list')
+    return result.strip().split("\n")
 
 def handleGenerateOtpMessage(receivedMessage):
 
@@ -38,16 +43,37 @@ def handleGenerateOtpMessage(receivedMessage):
         "target": receivedMessage["target"],
         "otp": getOtpCode(receivedMessage["keyName"]),
     }
-    sendMessage(encodeMessage(responseMessage))
+    sendMessage(responseMessage)
 
+def handleListOtpMessage():
+    sendMessage({
+        "type": "accountList",
+        "accounts": listOtpAccounts()
+    })
 
 def run(command: str) -> str:
     """Runs a shell command and returns its output."""
     return os.popen(command).read()
 
 
-while True:
-    receivedMessage = getMessage()
-    isGenerateOtp = receivedMessage.get("type") == "generateOtp"
-    if isGenerateOtp:
-        handleGenerateOtpMessage(receivedMessage)
+if __name__ == "__main__":
+    try:
+        # Read message from standard input
+        receivedMessage = getMessage()
+        messageType = receivedMessage.get("type")
+
+        if messageType == "generateOtp":
+            handleGenerateOtpMessage(receivedMessage)
+        elif messageType == "listAccounts":
+            handleListOtpMessage()
+        else:
+            sendMessage({
+                "type": "error",
+                "error": "unknown message {}"
+            }.format(messageType))
+    except Exception as e:
+        exc_info = sys.exc_info()
+        sendMessage({
+            "type": "exception",
+            "exception": traceback.format_exception(*exc_info)
+        })

@@ -10,14 +10,13 @@
   },
 
   "background": {
-    "page": "background/page.html"
+    "scripts": [ "background/script.js" ]
   },
 
   "permissions": [
     "nativeMessaging",
     "menus",
     "activeTab",
-    "storage"
   ],
 
   "applications": {
